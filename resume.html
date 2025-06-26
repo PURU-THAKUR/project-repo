@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVForge | Resume Visual Analyzer</title>
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #ff00f2;
+            --dark-bg: #0a0a1a;
+            --darker-bg: #050510;
+            --light-bg: #f5f5ff;
+            --text-light: #ffffff;
+            --text-dark: #222222;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff0055;
+        }
+
+        [data-theme="light"] {
+            --primary: #0066ff;
+            --secondary: #ff0066;
+            --dark-bg: #f5f5ff;
+            --darker-bg: #e0e0ff;
+            --light-bg: #ffffff;
+            --text-light: #222222;
+            --text-dark: #111111;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+            padding-bottom: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dark-bg);
+            font-weight: bold;
+            animation: pulse 2s infinite alternate;
+        }
+
+        .theme-toggle {
+            background: var(--darker-bg);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary);
+            color: var(--dark-bg);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--primary);
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: rgba(0, 242, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .upload-area.active {
+            background: rgba(0, 242, 255, 0.1);
+            border-style: solid;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .upload-text h2 {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .upload-text p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: var(--dark-bg);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: var(--dark-bg);
+        }
+
+        .scanning-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            background: var(--darker-bg);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanning-screen::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.1), transparent);
+            animation: scanning 2s infinite;
+        }
+
+        .scan-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        .scan-progress {
+            width: 100%;
+            height: 10px;
+            background: var(--dark-bg);
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .results {
+            display: none;
+            background: var(--darker-bg);
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 242, 255, 0.3);
+        }
+
+        .grade-display {
+            text-align: center;
+            margin-bottom: 2rem;
+            perspective: 1000px;
+        }
+
+        .grade-card {
+            display: inline-block;
+            font-size: 5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            border: 2px solid var(--primary);
+            transform-style: preserve-3d;
+            animation: gradeReveal 1.5s ease-out;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--dark-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary);
+        }
+
+        .metric-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: var(--primary);
+        }
+
+        .sections {
+            background: var(--dark-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+        }
+
+        .sections h3 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .section-list {
+            list-style: none;
+        }
+
+        .section-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-item:last-child {
+            border-bottom: none;
+        }
+
+        .section-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-status {
+            font-weight: bold;
+        }
+
+        .present {
+            color: var(--success);
+        }
+
+        .missing {
+            color: var(--danger);
+        }
+
+        .radar-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            margin: 2rem 0;
+        }
+
+        .radar {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .radar::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            opacity: 0.5;
+            margin: 20px;
+        }
+
+        .radar::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            opacity: 0.2;
+            margin: 40px;
+        }
+
+        .radar-sweep {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            overflow: hidden;
+        }
+
+        .sweep {
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(transparent, rgba(0, 242, 255, 0.3), transparent);
+            animation: sweep 4s infinite linear;
+        }
+
+        .radar-dots {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+        }
+
+        .dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .dot:nth-child(1) {
+            top: 30%;
+            left: 40%;
+            animation: pulse 2s infinite;
+        }
+
+        .dot:nth-child(2) {
+            top: 60%;
+            left: 60%;
+            animation: pulse 2s infinite 0.5s;
+        }
+
+        .dot:nth-child(3) {
+            top: 45%;
+            left: 30%;
+            animation: pulse 2s infinite 1s;
+        }
+
+        .dot:nth-child(4) {
+            top: 70%;
+            left: 45%;
+            animation: pulse 2s infinite 1.5s;
+        }
+
+        .dot:nth-child(5) {
+            top: 30%;
+            left: 70%;
+            animation: pulse 2s infinite 0.75s;
+        }
+
+        @keyframes scanning {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); }
+        }
+
+        @keyframes sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes gradeReveal {
+            0% { transform: rotateX(90deg) scale(0.5); opacity: 0; }
+            50% { transform: rotateX(0deg) scale(1.2); opacity: 1; }
+            100% { transform: rotateX(0deg) scale(1); opacity: 1; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .grade-card {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">CV</div>
+                <h1>CVForge</h1>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                <span class="theme-icon">🌓</span>
+                <span class="theme-text">AI Vision</span>
+            </button>
+        </header>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">
+                <h2>Upload Your Resume</h2>
+                <p>Drag & drop your PDF resume here or click to browse files</p>
+            </div>
+            <button class="btn">Select File</button>
+            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+        </div>
+
+        <div class="scanning-screen" id="scanningScreen">
+            <div class="scan-icon">🔍</div>
+            <h2>Analyzing Resume Structure</h2>
+            <p>CVForge is scanning your document for optimal structure and content</p>
+            <div class="scan-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="grade-display">
+                <div class="grade-card" id="grade">B+</div>
+            </div>
+
+            <div class="radar-container">
+                <div class="radar"></div>
+                <div class="radar-sweep">
+                    <div class="sweep"></div>
+                </div>
+                <div class="radar-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-title">
+                        <span>📏</span>
+                        <h3>Length Score</h3>
+                    </div>
+                    <div class="metric-value">78/100</div>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: 78%"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        <span>📊</span>
+                        <h3>Word Density</h3>
+                    </div>
+                    <div class="metric-value">65/100</div>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        <span>🎨</span>
+                        <h3>Format Score</h3>
+                    </div>
+                    <div class="metric-value">82/100</div>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: 82%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sections">
+                <h3>Key Sections Analysis</h3>
+                <ul class="section-list">
+                    <li class="section-item">
+                        <div class="section-name">
+                            <span>👤</span>
+                            <span>Personal Information</span>
+                        </div>
+                        <div class="section-status present">✅ Present</div>
+                    </li>
+                    <li class="section-item">
+                        <div class="section-name">
+                            <span>🎓</span>
+                            <span>Education</span>
+                        </div>
+                        <div class="section-status present">✅ Present</div>
+                    </li>
+                    <li class="section-item">
+                        <div class="section-name">
+                            <span>💼</span>
+                            <span>Work Experience</span>
+                        </div>
+                        <div class="section-status present">✅ Present</div>
+                    </li>
+                    <li class="section-item">
+                        <div class="section-name">
+                            <span>🛠️</span>
+                            <span>Skills</span>
+                        </div>
+                        <div class="section-status missing">❌ Missing</div>
+                    </li>
+                    <li class="section-item">
+                        <div class="section-name">
+                            <span>🏆</span>
+                            <span>Projects</span>
+                        </div>
+                        <div class="section-status missing">❌ Missing</div>
+                    </li>
+                    <li class="section-item">
+                        <div class="section-name">
+                            <span>🏅</span>
+                            <span>Achievements</span>
+                        </div>
+                        <div class="section-status missing">❌ Missing</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const scanningScreen = document.getElementById('scanningScreen');
+            const results = document.getElementById('results');
+            const progressBar = document.getElementById('progressBar');
+            const grade = document.getElementById('grade');
+            const themeToggle = document.getElementById('themeToggle');
+            const body = document.body;
+
+            // Theme toggle
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = body.getAttribute('data-theme');
+                if (currentTheme === 'light') {
+                    body.removeAttribute('data-theme');
+                    themeToggle.innerHTML = '<span class="theme-icon">🌓</span><span class="theme-text">AI Vision</span>';
+                } else {
+                    body.setAttribute('data-theme', 'light');
+                    themeToggle.innerHTML = '<span class="theme-icon">🌙</span><span class="theme-text">Dark Mode</span>';
+                }
+            });
+
+            // Upload area interactions
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('active');
+            });
+
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.classList.remove('active');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('active');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    processFile();
+                }
+            });
+
+            fileInput.addEventListener('change', processFile);
+
+            function processFile() {
+                const file = fileInput.files[0];
+                if (file && file.type === 'application/pdf') {
+                    // Show scanning screen
+                    uploadArea.style.display = 'none';
+                    scanningScreen.style.display = 'flex';
+                    
+                    // Simulate scanning progress
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += Math.random() * 10;
+                        if (progress > 100) progress = 100;
+                        progressBar.style.width = `${progress}%`;
+                        
+                        if (progress === 100) {
+                            clearInterval(interval);
+                            setTimeout(showResults, 500);
+                        }
+                    }, 300);
+                } else {
+                    alert('Please upload a PDF file');
+                }
+            }
+
+            function showResults() {
+                scanningScreen.style.display = 'none';
+                results.style.display = 'block';
+                
+                // Generate random grade (for demo)
+                const grades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-'];
+                const randomGrade = grades[Math.floor(Math.random() * grades.length)];
+                grade.textContent = randomGrade;
+                
+                // Animate grade reveal
+                grade.style.animation = 'none';
+                void grade.offsetWidth; // Trigger reflow
+                grade.style.animation = 'gradeReveal 1.5s ease-out';
+            }
+
+            // For demo purposes, simulate a file upload after 3 seconds
+            setTimeout(() => {
+                // Uncomment to enable auto-demo
+                // processFile();
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
